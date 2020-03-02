@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+
+  Serverless Observability Sample App
+  
+Globals:
+  Function:
+    Timeout: 3
+    Tracing: Active
+  Api:
+    TracingEnabled: True
+
+Resources:
+
+  OrdersTable:
+    Type: AWS::Serverless::SimpleTable
+
+  OrdersQueue:
+    Type: AWS::SQS::Queue
+
+  ReadOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: read-order/
+      Handler: app.lambdaHandler
+      Runtime: nodejs12.x
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref OrdersTable
+      Environment: 
+        Variables:
+          ORDERS_TABLE: !Ref OrdersTable
+      Events:
+        GetOrder:
+          Type: Api
+          Properties:
+            Path: /order/{id}
+            Method: GET
+
+  CreateOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: create-order/
+      Handler: app.lambdaHandler
+      Runtime: nodejs12.x
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName:
+              !GetAtt OrdersQueue.QueueName
+      Environment: 
+        Variables:
+          ORDERS_QUEUE_URL: !Ref OrdersQueue
+      Events:
+        GetOrder:
+          Type: Api
+          Properties:
+            Path: /order
+            Method: POST
+
+  ProcessOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: process-order/
+      Handler: app.lambdaHandler
+      Runtime: nodejs12.x
+      Timeout: 30
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrdersTable
+      Environment: 
+        Variables:
+          ORDERS_TABLE: !Ref OrdersTable
+      Events:
+        MySQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt OrdersQueue.Arn
+            BatchSize: 10
+    
+Outputs:
+  HelloWorldApi:
+    Description: "Endpoint URL for Prod stage for GET/POST functions"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/order/"

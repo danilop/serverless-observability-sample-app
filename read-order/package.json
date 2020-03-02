@@ -1,0 +1,18 @@
+{
+  "name": "read-order",
+  "version": "1.0.0",
+  "description": "Read order",
+  "main": "app.js",
+  "repository": "",
+  "author": "Danilo Poccia",
+  "license": "MIT",
+  "dependencies": {
+    "aws-embedded-metrics": "^1.0.1",
+    "aws-sdk": "^2.613.0",
+    "aws-xray-sdk": "^2.5.0"
+  },
+  "scripts": {
+  },
+  "devDependencies": {
+  }
+}
